@@ -1,16 +1,13 @@
-// Fonction pour lire les fichiers de shader
 async function readShader(id) {
     const req = await fetch(document.getElementById(id).src);
     return await req.text();
 }
 
-// Fonction pour créer un shader
 function createShader(gl, type, src) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, src);
     gl.compileShader(shader);
 
-    // Vérification de la compilation
     const success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
     if (success) return shader;
         
@@ -18,14 +15,12 @@ function createShader(gl, type, src) {
     gl.deleteShader(shader);
 }
 
-// Fonction pour créer un programme
 function createProgram(gl, vertShader, fragShader) {
     const program = gl.createProgram();
     gl.attachShader(program, vertShader);
     gl.attachShader(program, fragShader);
     gl.linkProgram(program);
 
-    // Vérification du lien
     const success = gl.getProgramParameter(program, gl.LINK_STATUS);
     if (success) return program;
 
@@ -33,7 +28,6 @@ function createProgram(gl, vertShader, fragShader) {
     gl.deleteProgram(program);
 }
 
-// Fonction principale
 async function main() {
     const fps = document.getElementById("fps");
 
@@ -62,7 +56,7 @@ async function main() {
     const fragShader = createShader(gl, gl.FRAGMENT_SHADER, await readShader("frag"));
     const program = createProgram(gl, vertShader, fragShader);
 
-    // Récupérer la location des uniformes
+
     const u_resolution = gl.getUniformLocation(program, "u_resolution");
     const u_time = gl.getUniformLocation(program, "u_time");
     const u_dt = gl.getUniformLocation(program, "u_dt");
@@ -103,10 +97,9 @@ async function main() {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 
     canvas.addEventListener("mousemove", function(event) {
-        var mouseX = event.clientX / canvas.width;
-        var mouseY = 1.0 - event.clientY / canvas.height;
+        var mouseX = event.offsetX / canvas.offsetWidth - 0.5;
+        var mouseY = 0.5 - event.offsetY / canvas.offsetHeight ;
         gl.uniform2f(u_mousePosition, mouseX, mouseY);
-        render();
     });
 
     function loop() {

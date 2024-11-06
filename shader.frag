@@ -18,8 +18,8 @@ out vec4 out_color;
 
 vec3 get_mouse_position(vec2 mouseUV) {
 
-    float x = (mouseUV.x) * 10.0;
-    float y = (mouseUV.y) * 10.0;
+    float x = (mouseUV.x) * 2.0;
+    float y = (mouseUV.y) * 20.0;
     return vec3(x, y, 0.0);
 }
 
@@ -53,17 +53,37 @@ float sdBox( vec3 p, vec3 b )
   return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
-float sdf_scene(vec3 p) {
-    vec3 spherePos = get_mouse_position(u_mousePosition);
-
-    float d1 = sdBoxFrame(p, vec3(5.0, 15.0, 5.0), 0.1);
-    float d2 = sdp_sphere(p - spherePos, 2.0);
-    float d4 = sdPlane(p, vec3(0.0, 1.0, 0.0), 0.0);
-    float d5 = sdBox(p - vec3(0.0, 1.0, 0.0), vec3(5.0, 1.0, 5.0));
-    float d6 = sdBox(p - vec3(0.0, 15.0, 0.0), vec3(5.0, 1.0, 5.0));
-
-    return min(min(d1, d4), smin(d2, min(d5, d6), 2.0));
+float sdCutHollowSphere( vec3 p, float r, float h, float t )
+{
+  float w = sqrt(r*r-h*h);
+  
+  vec2 q = vec2( length(p.xz), p.y );
+  return ((h*q.x<w*q.y) ? length(q-vec2(w,h)) : 
+                          abs(length(q)-r) ) - t;
 }
+
+float sdf_scene(vec3 p) {
+    vec3 currentMouse = get_mouse_position(u_mousePosition);
+    vec3 sphereOrigin = vec3(0.0, 8.5, 0.0);
+
+    float bf = sdBoxFrame(p, vec3(5.0, 15.0, 5.0), 0.1);
+    float sp1 = sdp_sphere(p - (currentMouse + sphereOrigin), 1.5);
+    float ground = sdPlane(p, vec3(0.0, 1.0, 0.0), 0.0);
+    float hs2 = sdCutHollowSphere(p - vec3(0.0, 2.0, 0.0), 0.0, 0.0, 3.0);
+    float hs3 = sdCutHollowSphere(p - vec3(0.0, 15.0, 0.0), 3.0, 0.0, 0.0);
+    float box1 = sdBox(p - vec3(0.0, 3.0, 0.0), vec3(5.0, 1.0, 5.0));
+    float box2 = sdBox(p - vec3(0.0, 15.0, 0.0), vec3(5.0, 1.0, 5.0));
+
+    float sceneElements = min(bf, ground);
+    sceneElements = min(sceneElements, min(box1, box2));
+
+    float combinedHSBox1 = smin(hs2, box1, 0.5);
+    float combinedHSBox2 = smin(hs3, box2, 0.5);
+    float combinedHS = smin(sp1, min(hs2, hs3), 0.8);
+
+    return min(sceneElements, min(combinedHSBox1, min(combinedHSBox2, combinedHS)));
+}
+
 
 float ray_march(vec3 ro, vec3 rd) {
     float t = 0.0;
